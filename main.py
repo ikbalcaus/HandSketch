@@ -114,27 +114,32 @@ def video_stream():
     video.release()
     cv2.destroyAllWindows()
 
-def close_app():
-    video.release()
-    cv2.destroyAllWindows()
-    root.destroy()
-
 def save_image():
-    file_path = filedialog.asksaveasfilename(defaultextension=".png", initialfile="image.png", filetypes=[("PNG files", "*.png"), ("All files", "*.*")])
+    file_path = filedialog.asksaveasfilename(defaultextension=".jpg", initialfile="image.jpg", filetypes=[("JPEG files", "*.jpg"), ("All files", "*.*")])
     if file_path:
         img = Image.fromarray(canvas)
         img.save(file_path)
+
+def convert_to_text():
+    text_window = tk.Toplevel(root)
+    text_window.title("Text Conversion Window")
+    text_window.geometry("800x550")
 
 def clear_canvas():
     global canvas
     canvas = np.ones((height, width, 3), dtype="uint8") * 255
 
+def close_app():
+    video.release()
+    cv2.destroyAllWindows()
+    root.destroy()
+
 menu_frame = tk.Frame(root)
 menu_frame.pack(fill=tk.X)
 
-save_button = tk.Button(menu_frame, text="Save", command=save_image, bg="lightgray", fg="black").pack(side=tk.LEFT, padx=10, pady=3)
-clear_button = tk.Button(menu_frame, text="Clear", command=clear_canvas, bg="lightgray", fg="black").pack(side=tk.LEFT, padx=0, pady=3)
-exit_button = tk.Button(menu_frame, text="Exit", command=close_app, bg="lightgray", fg="black").pack(side=tk.LEFT, padx=10, pady=3)
+tk.Button(menu_frame, text="Save Image", command=save_image, bg="lightgray", fg="black").pack(side=tk.LEFT, padx=10, pady=3)
+tk.Button(menu_frame, text="Convert to Text", command=convert_to_text, bg="lightgray", fg="black").pack(side=tk.LEFT, padx=0, pady=3)
+tk.Button(menu_frame, text="Clear Canvas", command=clear_canvas, bg="lightgray", fg="black").pack(side=tk.LEFT, padx=10, pady=3)
 
 root.protocol("WM_DELETE_WINDOW", close_app)
 
