@@ -12,7 +12,7 @@ class CNNModel(nn.Module):
         self.conv1 = nn.Conv2d(1, 32, kernel_size=3, padding=1)
         self.conv2 = nn.Conv2d(32, 64, kernel_size=3, padding=1)
         self.fc1 = nn.Linear(64 * 7 * 7, 128)
-        self.fc2 = nn.Linear(128, 10)
+        self.fc2 = nn.Linear(128, 62)
         self.pool = nn.MaxPool2d(2, 2)
         self.relu = nn.ReLU()
         
@@ -24,13 +24,21 @@ class CNNModel(nn.Module):
         x = self.fc2(x)
         return x
 
+def map_class_to_char(class_idx):
+    if class_idx < 10:
+        return str(class_idx)
+    elif class_idx < 36:
+        return chr(class_idx - 10 + ord('A'))
+    else:
+        return chr(class_idx - 36 + ord('a'))
+
 def predict_multiple(model, image_path):
     model.eval()
     transform = transforms.Compose([
         transforms.Grayscale(num_output_channels=1),
         transforms.Resize((28, 28)),
         transforms.ToTensor(),
-        transforms.Normalize((0.5,), (0.5,))
+        transforms.Normalize((0.0,), (1.0,))
     ])
     
     image = Image.open(image_path).convert("L")
@@ -50,7 +58,8 @@ def predict_multiple(model, image_path):
             with torch.no_grad():
                 output = model(roi_pil)
                 _, predicted = torch.max(output, 1)
-                results.append(predicted.item())
+                char = map_class_to_char(predicted.item())
+                results.append(char)
 
     return results
 
@@ -67,6 +76,5 @@ if __name__ == "__main__":
     if os.path.exists("image.jpg"):
         characters = main("image.jpg")
         print(characters)
-        main("image.jpg")
     else:
         print("Image 'image.jpg' not found in the current directory")

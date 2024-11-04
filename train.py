@@ -1,20 +1,27 @@
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, random_split
 from torchvision import datasets, transforms
 
 transform = transforms.Compose([
     transforms.Grayscale(num_output_channels=1),
     transforms.Resize((28, 28)),
     transforms.ToTensor(),
-    transforms.Normalize((0.5,), (0.5,))
+    transforms.Normalize((0.0,), (1.0,))
 ])
 
-train_dataset = datasets.ImageFolder(root="./dataset/", transform=transform)
-train_loader = DataLoader(train_dataset, batch_size=64, shuffle=True)
+dataset = datasets.ImageFolder(root="./dataset/", transform=transform)
 
-print("Number of images in the dataset: " + str(len(train_dataset)))
+train_size = int(0.8 * len(dataset))
+test_size = len(dataset) - train_size
+train_dataset, test_dataset = random_split(dataset, [train_size, test_size])
+
+print("Broj slika u trening setu:", len(train_dataset))
+print("Broj slika u test setu:", len(test_dataset))
+
+train_loader = DataLoader(train_dataset, batch_size=64, shuffle=True)
+test_loader = DataLoader(test_dataset, batch_size=64, shuffle=False)
 
 class CNNModel(nn.Module):
     def __init__(self):
@@ -22,7 +29,7 @@ class CNNModel(nn.Module):
         self.conv1 = nn.Conv2d(1, 32, kernel_size=3, padding=1)
         self.conv2 = nn.Conv2d(32, 64, kernel_size=3, padding=1)
         self.fc1 = nn.Linear(64 * 7 * 7, 128)
-        self.fc2 = nn.Linear(128, 10)
+        self.fc2 = nn.Linear(128, 62)
         self.pool = nn.MaxPool2d(2, 2)
         self.relu = nn.ReLU()
         
@@ -53,7 +60,21 @@ def train_model(model, criterion, optimizer, train_loader, epochs=5):
         print(f"Epoch [{epoch+1}/{epochs}], Loss: {running_loss/len(train_loader):.4f}")
     
     torch.save(model.state_dict(), "logs/model.pth")
-    torch.save(optimizer.state_dict(), "logs/optimizer.pth")
-    print("Model and optimizer saved successfully")
+    print("Model saved to 'logs/model.pth'")
+
+def evaluate_model(model, test_loader):
+    model.eval()
+    correct = 0
+    total = 0
+    with torch.no_grad():
+        for images, labels in test_loader:
+            outputs = model(images)
+            _, predicted = torch.max(outputs.data, 1)
+            total += labels.size(0)
+            correct += (predicted == labels).sum().item()
+
+    accuracy = 100 * correct / total
+    print(f'Accuracy: {accuracy:.2f}%')
 
 train_model(model, criterion, optimizer, train_loader)
+evaluate_model(model, test_loader)
