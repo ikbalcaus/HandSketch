@@ -3,6 +3,8 @@ import mediapipe as mp
 import numpy as np
 import threading
 import tkinter as tk
+import os
+from datetime import datetime
 from tkinter import filedialog
 from PIL import Image, ImageTk
 
@@ -148,7 +150,13 @@ def mouse_motion(event):
             cv2.circle(canvas, (event.x, event.y), 15, (255, 255, 255), -1)
 
 def save_image():
-    file_path = filedialog.asksaveasfilename(defaultextension=".jpg", initialfile="image.jpg", filetypes=[("JPEG files", "*.jpg"), ("All files", "*.*")])
+    os.makedirs("images", exist_ok=True)
+    file_path = filedialog.asksaveasfilename(
+        defaultextension=".jpg",
+        initialdir="images",
+        initialfile=f"{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.jpg",
+        filetypes=[("JPEG files", "*.jpg"), ("All files", "*.*")]
+    )
     if file_path:
         img = Image.fromarray(canvas)
         img.save(file_path)
@@ -168,6 +176,10 @@ def toggle_mode():
     mouse_drawing = False
     mouse_erasing = False
     prev_x, prev_y = None, None
+    if mouse_mode:
+        camera_mode_label.config(text="Mode: MOUSE")
+    else:
+        camera_mode_label.config(text="Mode: CAMERA")
 
 def close_app():
     video.release()
@@ -185,6 +197,9 @@ tk.Button(menu_frame, text="Toggle Mode", command=toggle_mode, bg="lightgray", f
 canvas_label.bind("<ButtonPress>", mouse_press)
 canvas_label.bind("<ButtonRelease>", mouse_release)
 canvas_label.bind("<Motion>", mouse_motion)
+
+camera_mode_label = tk.Label(menu_frame, text="Mode: MOUSE", bg="lightgray", fg="black")
+camera_mode_label.pack(side=tk.LEFT, padx=10, pady=3)
 
 root.protocol("WM_DELETE_WINDOW", close_app)
 

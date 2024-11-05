@@ -28,11 +28,11 @@ def map_class_to_char(class_idx):
     if class_idx < 10:
         return str(class_idx)
     elif class_idx < 36:
-        return chr(class_idx - 10 + ord('A'))
+        return chr(class_idx - 10 + ord("A"))
     else:
-        return chr(class_idx - 36 + ord('a'))
+        return chr(class_idx - 36 + ord("a"))
 
-def predict_multiple(model, image_path):
+def predict_characters(model, image_path):
     model.eval()
     transform = transforms.Compose([
         transforms.Grayscale(num_output_channels=1),
@@ -40,10 +40,8 @@ def predict_multiple(model, image_path):
         transforms.ToTensor(),
         transforms.Normalize((0.0,), (1.0,))
     ])
-    
     image = Image.open(image_path).convert("L")
     image_np = np.array(image)
-    
     _, thresh = cv2.threshold(image_np, 127, 255, cv2.THRESH_BINARY_INV)
     contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
@@ -54,27 +52,37 @@ def predict_multiple(model, image_path):
             roi = thresh[y:y+h, x:x+w]
             roi_pil = Image.fromarray(roi)
             roi_pil = transform(roi_pil).unsqueeze(0)
-            
             with torch.no_grad():
                 output = model(roi_pil)
                 _, predicted = torch.max(output, 1)
                 char = map_class_to_char(predicted.item())
                 results.append(char)
-
     return results
 
-def main(image_path):
+class Predict:
     model = CNNModel()
     if os.path.exists("logs/model.pth"):
         model.load_state_dict(torch.load("logs/model.pth", weights_only=True))
     model.eval()
 
-    characters = predict_multiple(model, image_path)
-    return characters
+    @staticmethod
+    def predict_last_image():
+        if os.path.exists("images"):
+            characters = predict_characters(Predict.model, os.path.join("images", os.listdir("images")[-1]))
+            return characters
+        else:
+            return []
+
+    @staticmethod
+    def predict_all_images():
+        results = {}
+        if os.path.exists("images"):
+            for filename in os.listdir("images"):
+                if filename.endswith((".jpg", ".png")):
+                    characters = predict_characters(Predict.model, os.path.join("images", filename))
+                    results[filename] = characters
+        return results
 
 if __name__ == "__main__":
-    if os.path.exists("image.jpg"):
-        characters = main("image.jpg")
-        print(characters)
-    else:
-        print("Image 'image.jpg' not found in the current directory")
+    for image, characters in Predict.predict_all_images().items():
+        print(f"{image}: {characters}")
