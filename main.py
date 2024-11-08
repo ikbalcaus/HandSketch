@@ -3,10 +3,17 @@ import mediapipe as mp
 import numpy as np
 import threading
 import tkinter as tk
+import torch
 import os
 from datetime import datetime
 from tkinter import filedialog
 from PIL import Image, ImageTk
+from detect import detect_characters, CNNModel
+
+model = CNNModel()
+if os.path.exists("logs/model.pth"):
+    model.load_state_dict(torch.load("logs/model.pth" , weights_only=True))
+model.eval()
 
 mp_draw = mp.solutions.drawing_utils
 mp_hand = mp.solutions.hands
@@ -165,10 +172,54 @@ def clear_canvas():
     global canvas
     canvas = np.ones((height, width, 3), dtype="uint8") * 255
 
+def validate_input(char):
+    return len(char) <= 1
+
+def delete_temp_image(temp_image_path):
+    if os.path.exists(temp_image_path):
+        os.remove(temp_image_path)
+
 def convert_to_text():
+    temp_image_path = f"images/{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.jpg"
+    img = Image.fromarray(canvas)
+    img.save(temp_image_path)
+    characters = detect_characters(model, temp_image_path)
     text_window = tk.Toplevel(root)
-    text_window.title("Text Conversion Window")
-    text_window.geometry("800x550")
+    text_window.title("Detected Characters")
+    text_window.geometry("800x200")
+    text_window.protocol("WM_DELETE_WINDOW", lambda: delete_temp_image(temp_image_path) or text_window.destroy())
+    bounds = get_character_bounds()
+    padding = 5
+
+    for i, char in enumerate(characters):
+        if i < len(bounds):
+            x, y, w, h = bounds[i]
+            x_padded = max(x - padding, 0)
+            y_padded = max(y - padding, 0)
+            w_padded = min(w + 2 * padding, canvas.shape[1] - x_padded)
+            h_padded = min(h + 2 * padding, canvas.shape[0] - y_padded)
+            char_img = canvas[y_padded:y_padded + h_padded, x_padded:x_padded + w_padded]
+            char_frame = tk.Frame(text_window)
+            char_frame.pack(side=tk.LEFT, padx=5)
+            char_img_pil = Image.fromarray(char_img)
+            char_img_tk = ImageTk.PhotoImage(char_img_pil)
+            img_label = tk.Label(char_frame, image=char_img_tk)
+            img_label.image = char_img_tk
+            img_label.pack()
+            char_label = tk.Label(char_frame, text=char, font=("Arial", 12), fg="black")
+            char_label.pack()
+            validate_cmd = text_window.register(validate_input)
+            entry = tk.Entry(char_frame, font=("Arial", 12), width=3, validate="key", validatecommand=(validate_cmd, "%P"))
+            entry.pack()
+
+def get_character_bounds():
+    global canvas
+    gray_canvas = cv2.cvtColor(canvas, cv2.COLOR_BGR2GRAY)
+    _, binary_canvas = cv2.threshold(gray_canvas, 240, 255, cv2.THRESH_BINARY_INV)
+    contours, _ = cv2.findContours(binary_canvas, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    bounds = [cv2.boundingRect(contour) for contour in contours]
+    bounds = sorted(bounds, key=lambda x: x[0])
+    return bounds
 
 def toggle_mode():
     global video, mouse_mode, mouse_drawing, mouse_erasing, prev_x, prev_y

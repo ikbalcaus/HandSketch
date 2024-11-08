@@ -32,7 +32,7 @@ def map_class_to_char(class_idx):
     else:
         return chr(class_idx - 36 + ord("a"))
 
-def predict_characters(model, image_path):
+def detect_characters(model, image_path):
     model.eval()
     transform = transforms.Compose([
         transforms.Grayscale(num_output_channels=1),
@@ -54,35 +54,21 @@ def predict_characters(model, image_path):
             roi_pil = transform(roi_pil).unsqueeze(0)
             with torch.no_grad():
                 output = model(roi_pil)
-                _, predicted = torch.max(output, 1)
-                char = map_class_to_char(predicted.item())
+                _, detected = torch.max(output, 1)
+                char = map_class_to_char(detected.item())
                 results.append(char)
     return results
 
-class Predict:
-    model = CNNModel()
-    if os.path.exists("logs/model.pth"):
-        model.load_state_dict(torch.load("logs/model.pth", weights_only=True))
-    model.eval()
-
-    @staticmethod
-    def predict_last_image():
-        if os.path.exists("images"):
-            characters = predict_characters(Predict.model, os.path.join("images", os.listdir("images")[-1]))
-            return characters
-        else:
-            return []
-
-    @staticmethod
-    def predict_all_images():
-        results = {}
-        if os.path.exists("images"):
-            for filename in os.listdir("images"):
-                if filename.endswith((".jpg", ".png")):
-                    characters = predict_characters(Predict.model, os.path.join("images", filename))
-                    results[filename] = characters
-        return results
-
 if __name__ == "__main__":
-    for image, characters in Predict.predict_all_images().items():
-        print(f"{image}: {characters}")
+    results = {}
+    if os.path.exists("images"):
+        model = CNNModel()
+        if os.path.exists("logs/model.pth"):
+            model.load_state_dict(torch.load("logs/model.pth", weights_only=True))
+        model.eval()
+        for filename in os.listdir("images"):
+            if filename.endswith((".jpg", ".png")):
+                characters = detect_characters(model, os.path.join("images", filename))
+                results[filename] = characters
+    for filename, characters in results.items():
+        print(f"{filename}: {characters}")

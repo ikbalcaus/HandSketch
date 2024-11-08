@@ -24,7 +24,7 @@ train_size = int(0.8 * len(dataset))
 test_size = len(dataset) - train_size
 train_dataset, test_dataset = random_split(dataset, [train_size, test_size])
 
-print("Number of images in train set:", len(train_dataset))
+print("Number of images in training set:", len(train_dataset))
 print("Number of images in test set:", len(test_dataset))
 
 train_loader = DataLoader(train_dataset, batch_size=64, shuffle=True)
@@ -77,11 +77,11 @@ def evaluate_model(model, test_loader):
     with torch.no_grad():
         for images, labels in test_loader:
             outputs = model(images)
-            _, predicted = torch.max(outputs.data, 1)
+            _, detected = torch.max(outputs.data, 1)
             total += labels.size(0)
-            correct += (predicted == labels).sum().item()
+            correct += (detected == labels).sum().item()
     accuracy = 100 * correct / total
-    print(f'Accuracy: {accuracy:.2f}%')
+    print(f"Accuracy: {accuracy:.2f}%")
 
 train_model(model, criterion, optimizer, train_loader)
 evaluate_model(model, test_loader)
