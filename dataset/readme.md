@@ -1,4 +1,4 @@
-## Make a folder for each character and place corresponding images in it. Exaple:
+## Make a folder for each character and place corresponding images in it. Example:
 ## 1
  **[image1].jpg**  
  **[image2].jpg**

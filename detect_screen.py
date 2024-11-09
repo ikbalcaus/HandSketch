@@ -27,7 +27,7 @@ def get_character_bounds(canvas):
     bounds = sorted(bounds, key=lambda x: x[0])
     return bounds
 
-def export_char_images(characters, bounds, entries, canvas):
+def export_char_images(detect_window, canvas, characters, bounds, entries):
     for i, (char, entry) in enumerate(zip(characters, entries)):
         if not entry.get():
             continue
@@ -44,7 +44,8 @@ def export_char_images(characters, bounds, entries, canvas):
         os.makedirs(f"dataset/{char_name}", exist_ok=True)
         char_image_path = f"dataset/{char_name}/{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}_{i}.jpg"
         Image.fromarray(char_img_with_border).save(char_image_path)
-    
+    canvas.fill(255)
+    detect_window.destroy()
 
 def detect_screen(canvas, root):
     os.makedirs("images/temp", exist_ok=True)
@@ -52,7 +53,6 @@ def detect_screen(canvas, root):
     img = Image.fromarray(canvas)
     img.save(temp_image_path)
     characters = detect_characters(model, temp_image_path)
-    
     detect_window = tk.Toplevel(root)
     detect_window.title("Detected Characters")
     max_columns = 6
@@ -107,7 +107,7 @@ def detect_screen(canvas, root):
     menu_frame = tk.Frame(detect_window)
     menu_frame.pack(fill=tk.X)
     tk.Button(menu_frame, text="Copy Characters", command=lambda: copy_characters(characters), bg="lightgray", fg="black").pack(side=tk.BOTTOM, pady=2)
-    tk.Button(menu_frame, text="Export Character Images", command=lambda: export_char_images(characters, bounds, entries, canvas), bg="lightgray", fg="black").pack(side=tk.BOTTOM, pady=2)
+    tk.Button(menu_frame, text="Export Character Images", command=lambda: export_char_images(detect_window, canvas, characters, bounds, entries), bg="lightgray", fg="black").pack(side=tk.BOTTOM, pady=2)
 
 if __name__ == "__main__":
     print("This screen is not intended for direct use. Please run the 'main.py' file instead")

@@ -5,6 +5,7 @@ import argparse
 import os
 from torch.utils.data import DataLoader, random_split
 from torchvision import datasets, transforms
+from detect import CNNModel
 
 parser = argparse.ArgumentParser(description="Training settings")
 parser.add_argument("-e", "--epochs", type=int, default=5, help="number of epochs for training")
@@ -24,24 +25,6 @@ test_size = len(dataset) - train_size
 train_dataset, test_dataset = random_split(dataset, [train_size, test_size])
 train_loader = DataLoader(train_dataset, batch_size=64, shuffle=True)
 test_loader = DataLoader(test_dataset, batch_size=64, shuffle=False)
-
-class CNNModel(nn.Module):
-    def __init__(self):
-        super(CNNModel, self).__init__()
-        self.conv1 = nn.Conv2d(1, 32, kernel_size=3, padding=1)
-        self.conv2 = nn.Conv2d(32, 64, kernel_size=3, padding=1)
-        self.fc1 = nn.Linear(64 * 7 * 7, 128)
-        self.fc2 = nn.Linear(128, 62)
-        self.pool = nn.MaxPool2d(2, 2)
-        self.relu = nn.ReLU()
-        
-    def forward(self, x):
-        x = self.pool(self.relu(self.conv1(x)))
-        x = self.pool(self.relu(self.conv2(x)))
-        x = x.view(-1, 64 * 7 * 7)
-        x = self.relu(self.fc1(x))
-        x = self.fc2(x)
-        return x
 
 model = CNNModel()
 criterion = nn.CrossEntropyLoss()

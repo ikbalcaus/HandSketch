@@ -164,7 +164,7 @@ def save_image():
 
 def clear_canvas():
     global canvas
-    canvas = np.ones((height, width, 3), dtype="uint8") * 255
+    canvas.fill(255)
 
 def toggle_mode():
     global video, mouse_mode, mouse_drawing, mouse_erasing, prev_x, prev_y
