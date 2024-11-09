@@ -5,6 +5,7 @@ import threading
 import tkinter as tk
 import torch
 import os
+import pyperclip
 from datetime import datetime
 from tkinter import filedialog
 from PIL import Image, ImageTk
@@ -175,42 +176,9 @@ def clear_canvas():
 def validate_input(char):
     return len(char) <= 1
 
-def delete_temp_image(temp_image_path):
-    if os.path.exists(temp_image_path):
-        os.remove(temp_image_path)
-
-def convert_to_text():
-    temp_image_path = f"images/{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.jpg"
-    img = Image.fromarray(canvas)
-    img.save(temp_image_path)
-    characters = detect_characters(model, temp_image_path)
-    text_window = tk.Toplevel(root)
-    text_window.title("Detected Characters")
-    text_window.geometry("800x200")
-    text_window.protocol("WM_DELETE_WINDOW", lambda: delete_temp_image(temp_image_path) or text_window.destroy())
-    bounds = get_character_bounds()
-    padding = 5
-
-    for i, char in enumerate(characters):
-        if i < len(bounds):
-            x, y, w, h = bounds[i]
-            x_padded = max(x - padding, 0)
-            y_padded = max(y - padding, 0)
-            w_padded = min(w + 2 * padding, canvas.shape[1] - x_padded)
-            h_padded = min(h + 2 * padding, canvas.shape[0] - y_padded)
-            char_img = canvas[y_padded:y_padded + h_padded, x_padded:x_padded + w_padded]
-            char_frame = tk.Frame(text_window)
-            char_frame.pack(side=tk.LEFT, padx=5)
-            char_img_pil = Image.fromarray(char_img)
-            char_img_tk = ImageTk.PhotoImage(char_img_pil)
-            img_label = tk.Label(char_frame, image=char_img_tk)
-            img_label.image = char_img_tk
-            img_label.pack()
-            char_label = tk.Label(char_frame, text=char, font=("Arial", 12), fg="black")
-            char_label.pack()
-            validate_cmd = text_window.register(validate_input)
-            entry = tk.Entry(char_frame, font=("Arial", 12), width=3, validate="key", validatecommand=(validate_cmd, "%P"))
-            entry.pack()
+def copy_characters(characters):
+    text = "".join(characters)
+    pyperclip.copy(text)
 
 def get_character_bounds():
     global canvas
@@ -220,6 +188,63 @@ def get_character_bounds():
     bounds = [cv2.boundingRect(contour) for contour in contours]
     bounds = sorted(bounds, key=lambda x: x[0])
     return bounds
+
+def convert_to_text():
+    os.makedirs("images/temp", exist_ok=True)
+    temp_image_path = f"images/temp/{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.jpg"
+    img = Image.fromarray(canvas)
+    img.save(temp_image_path)
+    characters = detect_characters(model, temp_image_path)
+    
+    text_window = tk.Toplevel(root)
+    text_window.title("Detected Characters")
+    max_columns = 6
+    text_window_width = len(characters) * 150 if len(characters) <= max_columns else max_columns * 150
+    text_windows_height = int((len(characters) / max_columns + 1) * 210)
+    box_width = 120
+    box_height = 180
+    img_size = (80, 80)
+    padding = 5
+    text_window.geometry(f"{text_window_width}x{text_windows_height}")
+    bounds = get_character_bounds()
+
+    row_frame = None
+    for i, char in enumerate(characters):
+        if i % max_columns == 0:
+            row_frame = tk.Frame(text_window)
+            row_frame.pack(fill=tk.X, padx=10, pady=5)
+        
+        x, y, w, h = bounds[i]
+        x_padded = max(x - padding, 0)
+        y_padded = max(y - padding, 0)
+        w_padded = min(w + 2 * padding, canvas.shape[1] - x_padded)
+        h_padded = min(h + 2 * padding, canvas.shape[0] - y_padded)
+        char_img = canvas[y_padded:y_padded + h_padded, x_padded:x_padded + w_padded]
+
+        original_height, original_width = char_img.shape[:2]
+        aspect_ratio = original_width / original_height
+        if aspect_ratio > 1:
+            new_width = img_size[0]
+            new_height = int(new_width / aspect_ratio)
+        else:
+            new_height = img_size[1]
+            new_width = int(new_height * aspect_ratio)
+
+        char_img_resized = cv2.resize(char_img, (new_width, new_height), interpolation=cv2.INTER_AREA)
+        char_box = tk.Frame(row_frame, width=box_width, height=box_height, borderwidth=2, relief="groove")
+        char_box.pack_propagate(False)
+        char_box.pack(side=tk.LEFT, padx=10, pady=5)
+        char_img_pil = Image.fromarray(char_img_resized)
+        char_img_tk = ImageTk.PhotoImage(char_img_pil)
+        img_label = tk.Label(char_box, image=char_img_tk)
+        img_label.image = char_img_tk
+        img_label.pack(pady=(10, 5))
+        char_label = tk.Label(char_box, text=char, font=("Arial", 14), fg="black")
+        char_label.pack(pady=(0, 5))
+        validate_cmd = text_window.register(validate_input)
+        entry = tk.Entry(char_box, font=("Arial", 12), width=5, validate="key", validatecommand=(validate_cmd, "%P"))
+        entry.pack(pady=5)
+    tk.Button(text_window, text="Kopiraj karaktere", command=copy_characters(characters), bg="lightgray", fg="black").pack(side=tk.BOTTOM, pady=10)
 
 def toggle_mode():
     global video, mouse_mode, mouse_drawing, mouse_erasing, prev_x, prev_y
@@ -233,6 +258,9 @@ def toggle_mode():
         camera_mode_label.config(text="Mode: CAMERA")
 
 def close_app():
+    for image in os.listdir("images/temp"):
+        os.remove(os.path.join("images/temp", image))
+    os.rmdir("images/temp")
     video.release()
     cv2.destroyAllWindows()
     root.destroy()
