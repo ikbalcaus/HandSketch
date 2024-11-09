@@ -3,18 +3,11 @@ import mediapipe as mp
 import numpy as np
 import threading
 import tkinter as tk
-import torch
 import os
-import pyperclip
 from datetime import datetime
 from tkinter import filedialog
 from PIL import Image, ImageTk
-from detect import detect_characters, CNNModel
-
-model = CNNModel()
-if os.path.exists("logs/model.pth"):
-    model.load_state_dict(torch.load("logs/model.pth" , weights_only=True))
-model.eval()
+from detect_screen import detect_screen
 
 mp_draw = mp.solutions.drawing_utils
 mp_hand = mp.solutions.hands
@@ -51,6 +44,33 @@ def update_canvas():
     canvas_label.imgtk = imgtk
     canvas_label.configure(image=imgtk)
     canvas_label.after(10, update_canvas)
+
+def mouse_press(event):
+    global mouse_drawing, mouse_erasing, prev_x, prev_y
+    if event.num == 1:
+        if mouse_mode:
+            mouse_drawing = True
+            mouse_erasing = False
+            prev_x, prev_y = event.x, event.y
+    elif event.num == 3:
+        if mouse_mode:
+            mouse_drawing = False
+            mouse_erasing = True
+
+def mouse_release(event):
+    global mouse_drawing, mouse_erasing
+    mouse_drawing = False
+    mouse_erasing = False
+
+def mouse_motion(event):
+    global mouse_drawing, mouse_erasing, prev_x, prev_y
+    if mouse_mode:
+        if mouse_drawing:
+            if prev_x is not None and prev_y is not None:
+                cv2.line(canvas, (prev_x, prev_y), (event.x, event.y), (0, 0, 0), 5)
+            prev_x, prev_y = event.x, event.y
+        elif mouse_erasing:
+            cv2.circle(canvas, (event.x, event.y), 15, (255, 255, 255), -1)
 
 def video_stream():
     global canvas, mouse_mode, prev_x, prev_y
@@ -130,33 +150,6 @@ def video_stream():
     video.release()
     cv2.destroyAllWindows()
 
-def mouse_press(event):
-    global mouse_drawing, mouse_erasing, prev_x, prev_y
-    if event.num == 1:
-        if mouse_mode:
-            mouse_drawing = True
-            mouse_erasing = False
-            prev_x, prev_y = event.x, event.y
-    elif event.num == 3:
-        if mouse_mode:
-            mouse_drawing = False
-            mouse_erasing = True
-
-def mouse_release(event):
-    global mouse_drawing, mouse_erasing
-    mouse_drawing = False
-    mouse_erasing = False
-
-def mouse_motion(event):
-    global mouse_drawing, mouse_erasing, prev_x, prev_y
-    if mouse_mode:
-        if mouse_drawing:
-            if prev_x is not None and prev_y is not None:
-                cv2.line(canvas, (prev_x, prev_y), (event.x, event.y), (0, 0, 0), 5)
-            prev_x, prev_y = event.x, event.y
-        elif mouse_erasing:
-            cv2.circle(canvas, (event.x, event.y), 15, (255, 255, 255), -1)
-
 def save_image():
     os.makedirs("images", exist_ok=True)
     file_path = filedialog.asksaveasfilename(
@@ -172,79 +165,6 @@ def save_image():
 def clear_canvas():
     global canvas
     canvas = np.ones((height, width, 3), dtype="uint8") * 255
-
-def validate_input(char):
-    return len(char) <= 1
-
-def copy_characters(characters):
-    text = "".join(characters)
-    pyperclip.copy(text)
-
-def get_character_bounds():
-    global canvas
-    gray_canvas = cv2.cvtColor(canvas, cv2.COLOR_BGR2GRAY)
-    _, binary_canvas = cv2.threshold(gray_canvas, 240, 255, cv2.THRESH_BINARY_INV)
-    contours, _ = cv2.findContours(binary_canvas, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    bounds = [cv2.boundingRect(contour) for contour in contours]
-    bounds = sorted(bounds, key=lambda x: x[0])
-    return bounds
-
-def convert_to_text():
-    os.makedirs("images/temp", exist_ok=True)
-    temp_image_path = f"images/temp/{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.jpg"
-    img = Image.fromarray(canvas)
-    img.save(temp_image_path)
-    characters = detect_characters(model, temp_image_path)
-    
-    text_window = tk.Toplevel(root)
-    text_window.title("Detected Characters")
-    max_columns = 6
-    text_window_width = len(characters) * 150 if len(characters) <= max_columns else max_columns * 150
-    text_windows_height = int((len(characters) / max_columns + 1) * 210)
-    box_width = 120
-    box_height = 180
-    img_size = (80, 80)
-    padding = 5
-    text_window.geometry(f"{text_window_width}x{text_windows_height}")
-    bounds = get_character_bounds()
-
-    row_frame = None
-    for i, char in enumerate(characters):
-        if i % max_columns == 0:
-            row_frame = tk.Frame(text_window)
-            row_frame.pack(fill=tk.X, padx=10, pady=5)
-        
-        x, y, w, h = bounds[i]
-        x_padded = max(x - padding, 0)
-        y_padded = max(y - padding, 0)
-        w_padded = min(w + 2 * padding, canvas.shape[1] - x_padded)
-        h_padded = min(h + 2 * padding, canvas.shape[0] - y_padded)
-        char_img = canvas[y_padded:y_padded + h_padded, x_padded:x_padded + w_padded]
-
-        original_height, original_width = char_img.shape[:2]
-        aspect_ratio = original_width / original_height
-        if aspect_ratio > 1:
-            new_width = img_size[0]
-            new_height = int(new_width / aspect_ratio)
-        else:
-            new_height = img_size[1]
-            new_width = int(new_height * aspect_ratio)
-
-        char_img_resized = cv2.resize(char_img, (new_width, new_height), interpolation=cv2.INTER_AREA)
-        char_box = tk.Frame(row_frame, width=box_width, height=box_height, borderwidth=2, relief="groove")
-        char_box.pack_propagate(False)
-        char_box.pack(side=tk.LEFT, padx=10, pady=5)
-        char_img_pil = Image.fromarray(char_img_resized)
-        char_img_tk = ImageTk.PhotoImage(char_img_pil)
-        img_label = tk.Label(char_box, image=char_img_tk)
-        img_label.image = char_img_tk
-        img_label.pack(pady=(10, 5))
-        char_label = tk.Label(char_box, text=char, font=("Arial", 14), fg="black")
-        char_label.pack(pady=(0, 5))
-        validate_cmd = text_window.register(validate_input)
-        entry = tk.Entry(char_box, font=("Arial", 12), width=5, validate="key", validatecommand=(validate_cmd, "%P"))
-        entry.pack(pady=5)
-    tk.Button(text_window, text="Kopiraj karaktere", command=copy_characters(characters), bg="lightgray", fg="black").pack(side=tk.BOTTOM, pady=10)
 
 def toggle_mode():
     global video, mouse_mode, mouse_drawing, mouse_erasing, prev_x, prev_y
@@ -270,7 +190,7 @@ menu_frame.pack(fill=tk.X)
 
 tk.Button(menu_frame, text="Save Image", command=save_image, bg="lightgray", fg="black").pack(side=tk.LEFT, padx=10, pady=3)
 tk.Button(menu_frame, text="Clear Canvas", command=clear_canvas, bg="lightgray", fg="black").pack(side=tk.LEFT, padx=10, pady=3)
-tk.Button(menu_frame, text="Convert to Text", command=convert_to_text, bg="lightgray", fg="black").pack(side=tk.LEFT, padx=10, pady=3)
+tk.Button(menu_frame, text="Convert to Text", command=lambda: detect_screen(canvas, root), bg="lightgray", fg="black").pack(side=tk.LEFT, padx=10, pady=3)
 tk.Button(menu_frame, text="Toggle Mode", command=toggle_mode, bg="lightgray", fg="black").pack(side=tk.LEFT, padx=10, pady=3)
 
 canvas_label.bind("<ButtonPress>", mouse_press)

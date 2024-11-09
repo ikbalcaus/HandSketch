@@ -19,14 +19,9 @@ transform = transforms.Compose([
 ])
 
 dataset = datasets.ImageFolder(root="./dataset/", transform=transform)
-
 train_size = int(0.8 * len(dataset))
 test_size = len(dataset) - train_size
 train_dataset, test_dataset = random_split(dataset, [train_size, test_size])
-
-print("Number of images in training set:", len(train_dataset))
-print("Number of images in test set:", len(test_dataset))
-
 train_loader = DataLoader(train_dataset, batch_size=64, shuffle=True)
 test_loader = DataLoader(test_dataset, batch_size=64, shuffle=False)
 
@@ -65,7 +60,6 @@ def train_model(model, criterion, optimizer, train_loader, epochs=epochs):
             optimizer.step()
             running_loss += loss.item()
         print(f"Epoch [{epoch+1}/{epochs}], Loss: {running_loss/len(train_loader):.4f}")
-
     os.makedirs("logs", exist_ok=True)
     torch.save(model.state_dict(), "logs/model.pth")
     print("Model saved to 'logs/model.pth'")
@@ -83,5 +77,8 @@ def evaluate_model(model, test_loader):
     accuracy = 100 * correct / total
     print(f"Accuracy: {accuracy:.2f}%")
 
-train_model(model, criterion, optimizer, train_loader)
-evaluate_model(model, test_loader)
+if __name__ == "__main__":
+    print("Number of images in training set:", len(train_dataset))
+    print("Number of images in test set:", len(test_dataset))
+    train_model(model, criterion, optimizer, train_loader)
+    evaluate_model(model, test_loader)
