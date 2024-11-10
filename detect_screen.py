@@ -47,7 +47,6 @@ def save_results(detect_window, canvas, characters, bounds, entries):
         char_image_path = f"dataset/{char_name}/{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}_{i}.jpg"
         Image.fromarray(char_img_with_border).save(char_image_path)
         train_new_images(model, char_image_path, char_name)
-    canvas.fill(255)
     detect_window.destroy()
 
 def detect_screen(canvas, root):
