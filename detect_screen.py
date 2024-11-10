@@ -1,11 +1,15 @@
 import os
 import cv2
 import torch
-from datetime import datetime
-from PIL import Image, ImageTk
+import torch.nn as nn
+import torch.optim as optim
 import pyperclip
 import tkinter as tk
-from detect import detect_characters, CNNModel
+from datetime import datetime
+from PIL import Image, ImageTk
+from configuration import CNNModel, transform
+from train import train_new_images
+from detect import detect_characters
 
 model = CNNModel()
 if os.path.exists("logs/model.pth"):
@@ -27,7 +31,7 @@ def get_character_bounds(canvas):
     bounds = sorted(bounds, key=lambda x: x[0])
     return bounds
 
-def export_char_images(detect_window, canvas, characters, bounds, entries):
+def save_results(detect_window, canvas, characters, bounds, entries):
     for i, (char, entry) in enumerate(zip(characters, entries)):
         if not entry.get():
             continue
@@ -44,6 +48,7 @@ def export_char_images(detect_window, canvas, characters, bounds, entries):
         os.makedirs(f"dataset/{char_name}", exist_ok=True)
         char_image_path = f"dataset/{char_name}/{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}_{i}.jpg"
         Image.fromarray(char_img_with_border).save(char_image_path)
+        train_new_images(model, char_image_path, char_name)
     canvas.fill(255)
     detect_window.destroy()
 
@@ -107,8 +112,8 @@ def detect_screen(canvas, root):
     menu_frame = tk.Frame(detect_window)
     menu_frame.pack(fill=tk.X)
     tk.Button(menu_frame, text="Copy Characters", command=lambda: copy_characters(characters), bg="lightgray", fg="black").pack(side=tk.BOTTOM, pady=2)
-    tk.Button(menu_frame, text="Export Character Images", command=lambda: export_char_images(detect_window, canvas, characters, bounds, entries), bg="lightgray", fg="black").pack(side=tk.BOTTOM, pady=2)
+    tk.Button(menu_frame, text="Export Character Images", command=lambda: save_results(detect_window, canvas, characters, bounds, entries), bg="lightgray", fg="black").pack(side=tk.BOTTOM, pady=2)
 
 if __name__ == "__main__":
-    print("This screen is not intended for direct use. Please run the 'main.py' file instead")
+    print("This file is not intended for direct use. Please run the 'main.py' file instead")
     input("Press Enter to exit...")

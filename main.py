@@ -8,6 +8,10 @@ from datetime import datetime
 from tkinter import filedialog
 from PIL import Image, ImageTk
 from detect_screen import detect_screen
+from train import start_training
+
+if not os.path.exists("logs/model.pth"):
+    start_training()
 
 mp_draw = mp.solutions.drawing_utils
 mp_hand = mp.solutions.hands
@@ -192,14 +196,14 @@ tk.Button(menu_frame, text="Save Image", command=save_image, bg="lightgray", fg=
 tk.Button(menu_frame, text="Clear Canvas", command=clear_canvas, bg="lightgray", fg="black").pack(side=tk.LEFT, padx=10, pady=3)
 tk.Button(menu_frame, text="Convert to Text", command=lambda: detect_screen(canvas, root), bg="lightgray", fg="black").pack(side=tk.LEFT, padx=10, pady=3)
 tk.Button(menu_frame, text="Toggle Mode", command=toggle_mode, bg="lightgray", fg="black").pack(side=tk.LEFT, padx=10, pady=3)
+camera_mode_label = tk.Label(menu_frame, text="Mode: MOUSE", bg="lightgray", fg="black")
+camera_mode_label.pack(side=tk.LEFT, padx=10, pady=3)
 
 canvas_label.bind("<ButtonPress>", mouse_press)
 canvas_label.bind("<ButtonRelease>", mouse_release)
 canvas_label.bind("<Motion>", mouse_motion)
 
-camera_mode_label = tk.Label(menu_frame, text="Mode: MOUSE", bg="lightgray", fg="black")
-camera_mode_label.pack(side=tk.LEFT, padx=10, pady=3)
-
+root.resizable(False, False)
 root.protocol("WM_DELETE_WINDOW", close_app)
 
 thread = threading.Thread(target=video_stream)

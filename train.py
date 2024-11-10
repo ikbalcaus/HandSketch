@@ -3,21 +3,15 @@ import torch.nn as nn
 import torch.optim as optim
 import argparse
 import os
+from PIL import Image
 from torch.utils.data import DataLoader, random_split
 from torchvision import datasets, transforms
-from detect import CNNModel
+from configuration import CNNModel, transform
 
 parser = argparse.ArgumentParser(description="Training settings")
 parser.add_argument("-e", "--epochs", type=int, default=5, help="number of epochs for training")
 args = parser.parse_args()
 epochs = args.epochs
-
-transform = transforms.Compose([
-    transforms.Grayscale(num_output_channels=1),
-    transforms.Resize((28, 28)),
-    transforms.ToTensor(),
-    transforms.Normalize((0.0,), (1.0,))
-])
 
 dataset = datasets.ImageFolder(root="./dataset/", transform=transform)
 train_size = int(0.8 * len(dataset))
@@ -60,8 +54,29 @@ def evaluate_model(model, test_loader):
     accuracy = 100 * correct / total
     print(f"Accuracy: {accuracy:.2f}%")
 
-if __name__ == "__main__":
+def train_new_images(model, char_img_path, label):
+    image = Image.open(char_img_path).convert("L")
+    image = transform(image).unsqueeze(0)
+    model.train()
+    optimizer = optim.Adam(model.parameters(), lr=0.001)
+    criterion = nn.CrossEntropyLoss()
+    label_idx = ord(label) - ord("0") if label.isdigit() else \
+                ord(label) - ord("A") + 10 if label.isupper() else \
+                ord(label) - ord("a") + 36
+    label_tensor = torch.tensor([label_idx])
+    optimizer.zero_grad()
+    output = model(image)
+    loss = criterion(output, label_tensor)
+    loss.backward()
+    optimizer.step()
+    torch.save(model.state_dict(), "logs/model.pth")
+
+def start_training():
     print("Number of images in training set:", len(train_dataset))
     print("Number of images in test set:", len(test_dataset))
     train_model(model, criterion, optimizer, train_loader)
     evaluate_model(model, test_loader)
+
+if __name__ == "__main__":
+    start_training()
+    input("Press Enter to exit...")
