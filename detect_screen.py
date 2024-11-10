@@ -1,13 +1,11 @@
 import os
 import cv2
 import torch
-import torch.nn as nn
-import torch.optim as optim
 import pyperclip
 import tkinter as tk
 from datetime import datetime
 from PIL import Image, ImageTk
-from configuration import CNNModel, transform
+from configuration import CNNModel
 from train import train_new_images
 from detect import detect_characters
 
@@ -112,7 +110,7 @@ def detect_screen(canvas, root):
     menu_frame = tk.Frame(detect_window)
     menu_frame.pack(fill=tk.X)
     tk.Button(menu_frame, text="Copy Characters", command=lambda: copy_characters(characters), bg="lightgray", fg="black").pack(side=tk.BOTTOM, pady=2)
-    tk.Button(menu_frame, text="Export Character Images", command=lambda: save_results(detect_window, canvas, characters, bounds, entries), bg="lightgray", fg="black").pack(side=tk.BOTTOM, pady=2)
+    tk.Button(menu_frame, text="Save Results", command=lambda: save_results(detect_window, canvas, characters, bounds, entries), bg="lightgray", fg="black").pack(side=tk.BOTTOM, pady=2)
 
 if __name__ == "__main__":
     print("This file is not intended for direct use. Please run the 'main.py' file instead")
