@@ -13,11 +13,15 @@ from video_stream import video_stream
 if not os.path.exists("logs/model.pth"):
     start_training()
 
-video = cv2.VideoCapture(0)
-allow_camera = tk.messagebox.askyesno("Camera Permission", "Do you want to use the camera?") if video.isOpened() else False
-
 root = tk.Tk()
 root.title("Hand Drawing Canvas")
+root.attributes('-topmost', True)
+root.update()
+root.attributes('-topmost', False)
+root.resizable(False, False)
+
+video = cv2.VideoCapture(0)
+allow_camera = tk.messagebox.askyesno("Camera Permission", "Do you want to use the camera?") if video.isOpened() else False
 
 if allow_camera:
     width = int(video.get(cv2.CAP_PROP_FRAME_WIDTH))
@@ -91,9 +95,10 @@ def clear_canvas():
 
 def toggle_mode():
     mouse_mode_var.set(not mouse_mode_var.get())
-    if allow_camera:
-        thread = threading.Thread(target=lambda: video_stream(video, canvas, mouse_mode_var, prev_x, prev_y, cursor_label))
-        thread.start()
+    if mouse_mode_var.get():
+        camera_mode_label.config(text="Mode: MOUSE")
+    else:
+        camera_mode_label.config(text="Mode: CAMERA")
 
 def close_app():
     if os.path.exists("images/temp"):
@@ -106,22 +111,17 @@ def close_app():
 
 menu_frame = tk.Frame(root)
 menu_frame.pack(fill=tk.X)
-tk.Button(menu_frame, text="Save Image", command=save_image, bg="lightgray", fg="black").pack(side=tk.LEFT, padx=10, pady=3)
-tk.Button(menu_frame, text="Clear Canvas", command=clear_canvas, bg="lightgray", fg="black").pack(side=tk.LEFT, padx=10, pady=3)
-tk.Button(menu_frame, text="Convert to Text", command=lambda: detect_screen(canvas, root), bg="lightgray", fg="black").pack(side=tk.LEFT, padx=10, pady=3)
+tk.Button(menu_frame, text="Save Image", command=save_image, bg="lightgray", fg="black").pack(side=tk.LEFT, padx=5, pady=2)
+tk.Button(menu_frame, text="Clear Canvas", command=clear_canvas, bg="lightgray", fg="black").pack(side=tk.LEFT, padx=5, pady=2)
+tk.Button(menu_frame, text="Convert to Text", command=lambda: detect_screen(canvas, root), bg="lightgray", fg="black").pack(side=tk.LEFT, padx=5, pady=2)
 if allow_camera:
-    tk.Button(menu_frame, text="Toggle Mode", command=toggle_mode, bg="lightgray", fg="black").pack(side=tk.LEFT, padx=10, pady=3)
+    tk.Button(menu_frame, text="Toggle Mode", command=toggle_mode, bg="lightgray", fg="black").pack(side=tk.LEFT, padx=5, pady=2)
     camera_mode_label = tk.Label(menu_frame, text="Mode: CAMERA", bg="lightgray", fg="black")
     camera_mode_label.pack(side=tk.LEFT, padx=10, pady=3)
 
 canvas_label.bind("<ButtonPress>", mouse_press)
 canvas_label.bind("<ButtonRelease>", mouse_release)
 canvas_label.bind("<Motion>", mouse_motion)
-
-root.attributes('-topmost', True)
-root.update()
-root.attributes('-topmost', False)
-root.resizable(False, False)
 root.protocol("WM_DELETE_WINDOW", close_app)
 
 if allow_camera:

@@ -57,41 +57,41 @@ def detect_screen(canvas, root):
     characters = detect_characters(model, temp_image_path)
     detect_window = tk.Toplevel(root)
     detect_window.title("Detected Characters")
-    max_columns = 6
-    detect_window_width = len(characters) * 150 if len(characters) <= max_columns else max_columns * 150
-    detect_window_height = int((len(characters) / max_columns + 1) * 230)
-    box_width = 120
-    box_height = 180
-    img_size = (80, 80)
-    padding = 5
-    detect_window.geometry(f"{detect_window_width}x{detect_window_height}")
+    detect_window.geometry("880x430")
+    detect_window.resizable(False, False)
+    detect_window.grab_set()
+    detect_window.update()
     bounds = get_character_bounds(canvas)
-
+    canvas_widget = tk.Canvas(detect_window)
+    frame = tk.Frame(canvas_widget)
+    canvas_widget.create_window((0, 0), window=frame, anchor="nw")
+    canvas_widget.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
     row_frame = None
+
     entries = []
     for i, char in enumerate(characters):
-        if i % max_columns == 0:
-            row_frame = tk.Frame(detect_window)
+        if i % 6 == 0:
+            row_frame = tk.Frame(frame)
             row_frame.pack(fill=tk.X, padx=10, pady=5)
-        
+
         x, y, w, h = bounds[i]
-        x_padded = max(x - padding, 0)
-        y_padded = max(y - padding, 0)
-        w_padded = min(w + 2 * padding, canvas.shape[1] - x_padded)
-        h_padded = min(h + 2 * padding, canvas.shape[0] - y_padded)
+        x_padded = max(x - 5, 0)
+        y_padded = max(y - 5, 0)
+        w_padded = min(w + 2 * 5, canvas.shape[1] - x_padded)
+        h_padded = min(h + 2 * 5, canvas.shape[0] - y_padded)
         char_img = canvas[y_padded:y_padded + h_padded, x_padded:x_padded + w_padded]
 
         original_height, original_width = char_img.shape[:2]
         aspect_ratio = original_width / original_height
         if aspect_ratio > 1:
-            new_width = img_size[0]
+            new_width = 80
             new_height = int(new_width / aspect_ratio)
         else:
-            new_height = img_size[1]
+            new_height = 80
             new_width = int(new_height * aspect_ratio)
 
         char_img_resized = cv2.resize(char_img, (new_width, new_height), interpolation=cv2.INTER_AREA)
-        char_box = tk.Frame(row_frame, width=box_width, height=box_height, borderwidth=2, relief="groove")
+        char_box = tk.Frame(row_frame, width=120, height=180, borderwidth=2, relief="groove")
         char_box.pack_propagate(False)
         char_box.pack(side=tk.LEFT, padx=10, pady=5)
         char_img_pil = Image.fromarray(char_img_resized)
@@ -99,17 +99,25 @@ def detect_screen(canvas, root):
         img_label = tk.Label(char_box, image=char_img_tk)
         img_label.image = char_img_tk
         img_label.pack(pady=(10, 5))
-        char_label = tk.Label(char_box, text=char, font=("Arial", 14), fg="black")
-        char_label.pack(pady=(0, 5))
+        tk.Label(char_box, text=char, font=("Arial", 14), fg="black").pack(pady=(0, 5))
         validate_cmd = detect_window.register(validate_input)
         entry = tk.Entry(char_box, font=("Arial", 12), width=5, validate="key", validatecommand=(validate_cmd, "%P"))
         entry.pack(pady=5)
         entries.append(entry)
 
+    frame.update_idletasks()
+    frame.config(height=frame.winfo_height() + 25)
+    canvas_widget.config(scrollregion=canvas_widget.bbox("all"))
+
     menu_frame = tk.Frame(detect_window)
-    menu_frame.pack(fill=tk.X)
-    tk.Button(menu_frame, text="Copy Characters", command=lambda: copy_characters(characters), bg="lightgray", fg="black").pack(side=tk.BOTTOM, pady=2)
-    tk.Button(menu_frame, text="Save Results", command=lambda: save_results(detect_window, canvas, characters, bounds, entries), bg="lightgray", fg="black").pack(side=tk.BOTTOM, pady=2)
+    menu_frame.place(relx=0.5, rely=1.0, anchor="s", width=detect_window.winfo_width())
+    tk.Button(menu_frame, text="Save Results", command=lambda: save_results(detect_window, canvas, characters, bounds, entries), bg="lightgray", fg="black").pack(side=tk.LEFT, padx=5, pady=2)
+    tk.Button(menu_frame, text="Copy Characters", command=lambda: copy_characters(characters), bg="lightgray", fg="black").pack(side=tk.LEFT, padx=5, pady=2)
+
+    scroll_y = tk.Scrollbar(detect_window, orient="vertical", command=canvas_widget.yview)
+    scroll_y.place(relx=1.0, rely=0.0, relheight=1.0, anchor="ne")
+    canvas_widget.config(yscrollcommand=scroll_y.set)
+    detect_window.bind_all("<MouseWheel>", lambda event: canvas_widget.yview_scroll(-1 if event.delta > 0 else 1, "units"))
 
 if __name__ == "__main__":
     print("This file is not intended for direct use. Please run the 'main.py' file instead")
