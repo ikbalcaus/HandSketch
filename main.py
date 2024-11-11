@@ -6,9 +6,9 @@ import os
 from datetime import datetime
 from tkinter import filedialog
 from PIL import Image, ImageTk
+from video_stream import video_stream
 from detect_screen import detect_screen
 from train import start_training
-from video_stream import video_stream
 
 if not os.path.exists("logs/model.pth"):
     start_training()
@@ -105,9 +105,7 @@ def close_app():
         for image in os.listdir("images/temp"):
             os.remove(os.path.join("images/temp", image))
         os.rmdir("images/temp")
-    video.release()
-    cv2.destroyAllWindows()
-    root.destroy()
+    root.quit()
 
 menu_frame = tk.Frame(root)
 menu_frame.pack(fill=tk.X)

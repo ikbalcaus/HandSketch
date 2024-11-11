@@ -7,7 +7,9 @@ mp_hand = mp.solutions.hands
 def video_stream(video, canvas=None, mouse_mode_var=None, prev_x=None, prev_y=None, cursor_label=None):
     with mp_hand.Hands(min_detection_confidence=0.5, min_tracking_confidence=0.5) as hands:
         while True:
-            ret, frame = video.read()            
+            ret, frame = video.read()
+            if not ret:
+                break
             frame = cv2.flip(frame, 1)
             rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             results = hands.process(rgb_frame)
@@ -73,6 +75,7 @@ def video_stream(video, canvas=None, mouse_mode_var=None, prev_x=None, prev_y=No
             cv2.imshow("Frame", frame)
 
             if cv2.waitKey(1) and not cv2.getWindowProperty("Frame", cv2.WND_PROP_VISIBLE):
+                cursor_label.place(x=-20, y=-20)
                 break
 
     video.release()
