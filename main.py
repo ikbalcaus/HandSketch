@@ -1,10 +1,10 @@
 import cv2
 import numpy as np
 import tkinter as tk
+from tkinter import messagebox, filedialog
 import threading
 import os
 from datetime import datetime
-from tkinter import filedialog
 from PIL import Image, ImageTk
 from video_stream import video_stream
 from detect_screen import detect_screen
@@ -15,13 +15,14 @@ if not os.path.exists("logs/model.pth"):
 
 root = tk.Tk()
 root.title("Hand Drawing Canvas")
+root.iconbitmap("icon.ico")
 root.attributes('-topmost', True)
 root.update()
 root.attributes('-topmost', False)
 root.resizable(False, False)
 
 video = cv2.VideoCapture(0)
-allow_camera = tk.messagebox.askyesno("Camera Permission", "Do you want to use the camera?") if video.isOpened() else False
+allow_camera = messagebox.askyesno("Camera Permission", "Do you want to use the camera?") if video.isOpened() else False
 
 if allow_camera:
     width = int(video.get(cv2.CAP_PROP_FRAME_WIDTH))
@@ -110,8 +111,8 @@ def close_app():
 menu_frame = tk.Frame(root)
 menu_frame.pack(fill=tk.X)
 tk.Button(menu_frame, text="Save Image", command=save_image, bg="lightgray", fg="black").pack(side=tk.LEFT, padx=5, pady=2)
-tk.Button(menu_frame, text="Clear Canvas", command=clear_canvas, bg="lightgray", fg="black").pack(side=tk.LEFT, padx=5, pady=2)
 tk.Button(menu_frame, text="Convert to Text", command=lambda: detect_screen(canvas, root), bg="lightgray", fg="black").pack(side=tk.LEFT, padx=5, pady=2)
+tk.Button(menu_frame, text="Clear Canvas", command=clear_canvas, bg="lightgray", fg="black").pack(side=tk.LEFT, padx=5, pady=2)
 if allow_camera:
     tk.Button(menu_frame, text="Toggle Mode", command=toggle_mode, bg="lightgray", fg="black").pack(side=tk.LEFT, padx=5, pady=2)
     camera_mode_label = tk.Label(menu_frame, text="Mode: CAMERA", bg="lightgray", fg="black")

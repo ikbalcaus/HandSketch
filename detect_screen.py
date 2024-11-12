@@ -1,8 +1,10 @@
-import os
 import cv2
 import torch
+import torch.nn as nn
+import torch.optim as optim
 import pyperclip
 import tkinter as tk
+import os
 from datetime import datetime
 from PIL import Image, ImageTk
 from configuration import CNNModel
@@ -13,9 +15,11 @@ model = CNNModel()
 if os.path.exists("logs/model.pth"):
     model.load_state_dict(torch.load("logs/model.pth", weights_only=True))
 model.eval()
+criterion = nn.CrossEntropyLoss()
+optimizer = optim.Adam(model.parameters(), lr=0.001)
 
 def validate_input(char):
-    return len(char) <= 1
+    return char == "" or (len(char) == 1 and (char.isdigit() or char.isalpha() and char.isascii()))
 
 def copy_characters(characters):
     text = "".join(characters)
@@ -35,10 +39,9 @@ def save_results(detect_window, canvas, characters, bounds, entries):
             continue
         x, y, w, h = bounds[i]
         char_img = canvas[y:y+h, x:x+w]
-        white_space = 7
         char_img_with_border = cv2.copyMakeBorder(
             char_img, 
-            top=white_space, bottom=white_space, left=white_space, right=white_space, 
+            top=7, bottom=7, left=7, right=7, 
             borderType=cv2.BORDER_CONSTANT, 
             value=[255, 255, 255]
         )
@@ -46,7 +49,7 @@ def save_results(detect_window, canvas, characters, bounds, entries):
         os.makedirs(f"dataset/{char_name}", exist_ok=True)
         char_image_path = f"dataset/{char_name}/{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}_{i}.jpg"
         Image.fromarray(char_img_with_border).save(char_image_path)
-        train_new_images(model, char_image_path, char_name)
+        train_new_images(model, criterion, optimizer, char_image_path, char_name)
     detect_window.destroy()
 
 def detect_screen(canvas, root):
@@ -57,6 +60,7 @@ def detect_screen(canvas, root):
     characters = detect_characters(model, temp_image_path)
     detect_window = tk.Toplevel(root)
     detect_window.title("Detected Characters")
+    detect_window.iconbitmap("icon.ico")
     detect_window.geometry("880x430")
     detect_window.resizable(False, False)
     detect_window.grab_set()

@@ -13,10 +13,6 @@ parser.add_argument("-e", "--epochs", type=int, default=5, help="number of epoch
 args = parser.parse_args()
 epochs = args.epochs
 
-model = CNNModel()
-criterion = nn.CrossEntropyLoss()
-optimizer = optim.Adam(model.parameters(), lr=0.001)
-
 def train_model(model, criterion, optimizer, train_loader, epochs=epochs):
     model.train()
     print("Training...")
@@ -46,12 +42,11 @@ def evaluate_model(model, test_loader):
     accuracy = 100 * correct / total
     print(f"Accuracy: {accuracy:.2f}%")
 
-def train_new_images(model, char_img_path, label):
+def train_new_images(model, criterion, optimizer, char_img_path, label):
+    model.load_state_dict(torch.load("logs/model.pth", weights_only=True))
     image = Image.open(char_img_path).convert("L")
     image = transform(image).unsqueeze(0)
     model.train()
-    optimizer = optim.Adam(model.parameters(), lr=0.001)
-    criterion = nn.CrossEntropyLoss()
     label_idx = ord(label) - ord("0") if label.isdigit() else \
                 ord(label) - ord("A") + 10 if label.isupper() else \
                 ord(label) - ord("a") + 36
@@ -64,7 +59,11 @@ def train_new_images(model, char_img_path, label):
     torch.save(model.state_dict(), "logs/model.pth")
 
 def start_training():
-    if not os.path.exists("dataset") or len(os.listdir("dataset")) == 0:
+    model = CNNModel()
+    criterion = nn.CrossEntropyLoss()
+    optimizer = optim.Adam(model.parameters(), lr=0.001)
+
+    if not os.path.exists("dataset") or len([file for file in os.listdir("dataset") if file != "readme.md"]) == 0:
         os.makedirs("dataset", exist_ok=True)
         os.makedirs("logs", exist_ok=True)
         torch.save(model.state_dict(), "logs/model.pth")

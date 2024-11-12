@@ -9,6 +9,11 @@ This project implements a character detection system using Python. It utilizes O
 - **PyTorch**: For character recognition and machine learning model inference
 - **Tkinter**: For GUI
 
+## Demonstration
+
+![](demonstration/main_screen.gif)
+![](demonstration/detect_screen.png)
+
 ## Installation
 
 1. Install [Python 3.10.0](https://www.python.org/downloads/release/python-3100/). Ensure that the "**Add python.exe to PATH**" option is selected during installation. 
@@ -46,7 +51,7 @@ The gestures are detected in real-time, with visual feedback provided on the scr
 
 ![](landmarks.png)  
 
-## Manualy config data
+## Manualy Config Data
 
 ### Datasets
 Download any dataset at: [kaggle.com/dataset](https://www.kaggle.com/datasets)  
@@ -58,7 +63,7 @@ To train model run:
     python train.py
 ```
 
-## Manualy test program
+## Manualy Test Program
 
 ### Detection
 To test character detection with saved images, place your image(s) inside the "**images**" folder and run:

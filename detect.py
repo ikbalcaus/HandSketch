@@ -1,6 +1,6 @@
-import torch
-import numpy as np
 import cv2
+import numpy as np
+import torch
 import os
 from PIL import Image
 from configuration import CNNModel, transform
