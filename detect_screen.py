@@ -60,7 +60,8 @@ def detect_screen(canvas, root):
     characters = detect_characters(model, temp_image_path)
     detect_window = tk.Toplevel(root)
     detect_window.title("Detected Characters")
-    detect_window.iconbitmap("icon.ico")
+    if os.name == "nt":
+        detect_window.iconbitmap("icon.ico")
     detect_window.geometry("880x430")
     detect_window.resizable(False, False)
     detect_window.grab_set()
