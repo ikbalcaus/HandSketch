@@ -1,4 +1,4 @@
-# HandDrawingAI
+# Hand Drawing Canvas
 
 This project implements a character detection system using Python. It utilizes OpenCV, Mediapipe, PyTorch and Tkinter for image processing and model inference.
 
@@ -33,7 +33,7 @@ To start program run a following command inside a project directory:
 
 ## Gestures
 
-HandDrawingAI recognizes the following hand gestures:
+Hand Drawing Canvas recognizes the following hand gestures:
 
 - **Writing Gesture**:  
   This gesture is recognized when:
