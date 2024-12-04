@@ -29,8 +29,8 @@ if allow_camera:
     width = int(video.get(cv2.CAP_PROP_FRAME_WIDTH))
     height = int(video.get(cv2.CAP_PROP_FRAME_HEIGHT))
 else:
-    width = 960
-    height = 540
+    width = 600
+    height = 400
 canvas = np.ones((height, width, 3), dtype="uint8") * 255
 
 canvas_frame = tk.Frame(root, width=width, height=height)
@@ -103,16 +103,12 @@ def toggle_mode():
         camera_mode_label.config(text="Mode: CAMERA")
 
 def close_app():
-    if os.path.exists("images/temp"):
-        for image in os.listdir("images/temp"):
-            os.remove(os.path.join("images/temp", image))
-        os.rmdir("images/temp")
     root.quit()
 
 menu_frame = tk.Frame(root)
 menu_frame.pack(fill=tk.X)
 tk.Button(menu_frame, text="Save Image", command=save_image, bg="lightgray", fg="black").pack(side=tk.LEFT, padx=5, pady=2)
-tk.Button(menu_frame, text="Convert to Text", command=lambda: detect_screen(canvas, root), bg="lightgray", fg="black").pack(side=tk.LEFT, padx=5, pady=2)
+tk.Button(menu_frame, text="Detect Character", command=lambda: detect_screen(canvas, root), bg="lightgray", fg="black").pack(side=tk.LEFT, padx=5, pady=2)
 tk.Button(menu_frame, text="Clear Canvas", command=clear_canvas, bg="lightgray", fg="black").pack(side=tk.LEFT, padx=5, pady=2)
 if allow_camera:
     tk.Button(menu_frame, text="Toggle Mode", command=toggle_mode, bg="lightgray", fg="black").pack(side=tk.LEFT, padx=5, pady=2)

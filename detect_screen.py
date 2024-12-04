@@ -8,8 +8,7 @@ import os
 from datetime import datetime
 from PIL import Image, ImageTk
 from configuration import CNNModel
-from train import train_new_images
-from detect import detect_characters
+from detect import detect_characters, get_character_contours
 
 model = CNNModel()
 if os.path.exists("logs/model.pth"):
@@ -21,17 +20,23 @@ optimizer = optim.Adam(model.parameters(), lr=0.001)
 def validate_input(char):
     return char == "" or (len(char) == 1 and (char.isdigit() or char.isalpha() and char.isascii()))
 
+def focus_next_entry(event, entries):
+    current_index = entries.index(event.widget)
+    next_index = (current_index + 1) % len(entries)
+    entries[next_index].focus_set()
+    return "break"
+
 def copy_characters(characters):
     text = "".join(characters)
     pyperclip.copy(text)
 
-def get_character_bounds(canvas):
-    gray_canvas = cv2.cvtColor(canvas, cv2.COLOR_BGR2GRAY)
-    _, binary_canvas = cv2.threshold(gray_canvas, 240, 255, cv2.THRESH_BINARY_INV)
-    contours, _ = cv2.findContours(binary_canvas, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    bounds = [cv2.boundingRect(contour) for contour in contours]
-    bounds = sorted(bounds, key=lambda x: x[0])
-    return bounds
+def delete_character(i, entries, char_boxes, characters, bounds):
+    entries[i].delete(0, tk.END)
+    char_boxes[i].destroy()
+    entries[i] = None
+    char_boxes[i] = None
+    characters[i] = None
+    bounds[i] = None
 
 def save_results(detect_window, canvas, characters, bounds, entries):
     for i, (char, entry) in enumerate(zip(characters, entries)):
@@ -49,37 +54,25 @@ def save_results(detect_window, canvas, characters, bounds, entries):
         os.makedirs(f"dataset/{char_name}", exist_ok=True)
         char_image_path = f"dataset/{char_name}/{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}_{i}.jpg"
         Image.fromarray(char_img_with_border).save(char_image_path)
-        train_new_images(model, criterion, optimizer, char_image_path, char_name)
     detect_window.destroy()
 
 def detect_screen(canvas, root):
-    os.makedirs("images/temp", exist_ok=True)
-    temp_image_path = f"images/temp/{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.jpg"
-    img = Image.fromarray(canvas)
-    img.save(temp_image_path)
-    characters = detect_characters(model, temp_image_path)
+    characters = detect_characters(model, canvas)
     detect_window = tk.Toplevel(root)
     detect_window.title("Detected Characters")
     if os.name == "nt":
         detect_window.iconbitmap("icon.ico")
-    detect_window.geometry("880x430")
+    detect_window.geometry("880x260")
     detect_window.resizable(False, False)
-    detect_window.grab_set()
     detect_window.update()
     detect_window.focus_set()
-    bounds = get_character_bounds(canvas)
-    canvas_widget = tk.Canvas(detect_window, highlightthickness=0, borderwidth=0)
-    frame = tk.Frame(canvas_widget)
-    canvas_widget.create_window((0, 0), window=frame, anchor="nw")
-    canvas_widget.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-    row_frame = None
-
+    contours, _ = get_character_contours(canvas)
+    bounds = [cv2.boundingRect(contour) for contour in contours]
+    frame = tk.Frame(detect_window)
+    char_boxes = []
     entries = []
+    
     for i, char in enumerate(characters):
-        if i % 6 == 0:
-            row_frame = tk.Frame(frame)
-            row_frame.pack(fill=tk.X, padx=10, pady=5)
-
         x, y, w, h = bounds[i]
         x_padded = max(x - 5, 0)
         y_padded = max(y - 5, 0)
@@ -97,9 +90,11 @@ def detect_screen(canvas, root):
             new_width = int(new_height * aspect_ratio)
 
         char_img_resized = cv2.resize(char_img, (new_width, new_height), interpolation=cv2.INTER_AREA)
-        char_box = tk.Frame(row_frame, width=120, height=180, borderwidth=2, relief="groove")
+        char_box = tk.Frame(detect_window, width=120, height=210, borderwidth=2, relief="groove")
         char_box.pack_propagate(False)
-        char_box.pack(side=tk.LEFT, padx=10, pady=5)
+        char_box.pack(side=tk.LEFT, padx=5, pady=5, anchor="n")
+        char_boxes.append(char_box)
+
         char_img_pil = Image.fromarray(char_img_resized)
         char_img_tk = ImageTk.PhotoImage(char_img_pil)
         img_label = tk.Label(char_box, image=char_img_tk)
@@ -112,20 +107,15 @@ def detect_screen(canvas, root):
         entries.append(entry)
         entry.bind("<FocusIn>", lambda e: e.widget.config(highlightthickness=0))
         entry.bind("<FocusOut>", lambda e: e.widget.config(highlightthickness=0))
+        entry.bind("<Tab>", lambda event, entries=entries: focus_next_entry(event, entries))
+        tk.Button(char_box, text="X", command=lambda i=i: delete_character(i, entries, char_boxes, characters, bounds), font=("Arial", 10)).pack(side=tk.BOTTOM, padx=5, pady=5)
 
     frame.update_idletasks()
     frame.config(height=frame.winfo_height() + 25)
-    canvas_widget.config(scrollregion=canvas_widget.bbox("all"))
-
     menu_frame = tk.Frame(detect_window)
     menu_frame.place(relx=0.5, rely=1.0, anchor="s", width=detect_window.winfo_width())
     tk.Button(menu_frame, text="Save Results", command=lambda: save_results(detect_window, canvas, characters, bounds, entries), bg="lightgray", fg="black").pack(side=tk.LEFT, padx=5, pady=2)
     tk.Button(menu_frame, text="Copy Characters", command=lambda: copy_characters(characters), bg="lightgray", fg="black").pack(side=tk.LEFT, padx=5, pady=2)
-
-    scroll_y = tk.Scrollbar(detect_window, orient="vertical", command=canvas_widget.yview)
-    scroll_y.place(relx=1.0, rely=0.0, relheight=1.0, anchor="ne")
-    canvas_widget.config(yscrollcommand=scroll_y.set)
-    detect_window.bind_all("<MouseWheel>", lambda event: canvas_widget.yview_scroll(-1 if event.delta > 0 else 1, "units"))
 
 if __name__ == "__main__":
     print("This file is not intended for direct use. Please run the 'main.py' file instead")

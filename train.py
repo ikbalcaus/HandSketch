@@ -9,7 +9,7 @@ from torchvision import datasets
 from configuration import CNNModel, transform
 
 parser = argparse.ArgumentParser(description="Training settings")
-parser.add_argument("-e", "--epochs", type=int, default=5, help="number of epochs for training")
+parser.add_argument("-e", "--epochs", type=int, default=10, help="number of epochs for training")
 args = parser.parse_args()
 epochs = args.epochs
 
@@ -41,22 +41,6 @@ def evaluate_model(model, test_loader):
             correct += (detected == labels).sum().item()
     accuracy = 100 * correct / total
     print(f"Accuracy: {accuracy:.2f}%")
-
-def train_new_images(model, criterion, optimizer, char_img_path, label):
-    model.load_state_dict(torch.load("logs/model.pth", weights_only=True))
-    image = Image.open(char_img_path).convert("L")
-    image = transform(image).unsqueeze(0)
-    model.train()
-    label_idx = ord(label) - ord("0") if label.isdigit() else \
-                ord(label) - ord("A") + 10 if label.isupper() else \
-                ord(label) - ord("a") + 36
-    label_tensor = torch.tensor([label_idx])
-    optimizer.zero_grad()
-    output = model(image)
-    loss = criterion(output, label_tensor)
-    loss.backward()
-    optimizer.step()
-    torch.save(model.state_dict(), "logs/model.pth")
 
 def start_training():
     model = CNNModel()

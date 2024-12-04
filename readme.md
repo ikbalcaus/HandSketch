@@ -63,14 +63,6 @@ To train model run:
     python train.py
 ```
 
-## Manualy Test Program
-
-### Detection
-To test character detection with saved images, place your image(s) inside the "**images**" folder and run:
-```bash
-    python detect.py
-```
-
 ### Video stream with hand recognition
 To try hand recognition through video streaming run:
 ```bash
