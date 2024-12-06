@@ -3,7 +3,6 @@ import torch.nn as nn
 import torch.optim as optim
 import argparse
 import os
-from PIL import Image
 from torch.utils.data import DataLoader, random_split
 from torchvision import datasets
 from configuration import CNNModel, transform

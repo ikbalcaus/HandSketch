@@ -163,5 +163,6 @@ cython_debug/
 
 logs/*
 images/*
+!.gitkeep
 dataset/*
 !readme.md

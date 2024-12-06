@@ -29,16 +29,14 @@ if allow_camera:
     width = int(video.get(cv2.CAP_PROP_FRAME_WIDTH))
     height = int(video.get(cv2.CAP_PROP_FRAME_HEIGHT))
 else:
-    width = 600
-    height = 400
+    width = 960
+    height = 540
 canvas = np.ones((height, width, 3), dtype="uint8") * 255
 
 canvas_frame = tk.Frame(root, width=width, height=height)
 canvas_frame.pack()
-
 canvas_label = tk.Label(canvas_frame)
 canvas_label.pack()
-
 cursor_label = tk.Label(canvas_frame, width=1, height=1, bg="lightgrey")
 cursor_label.place(x=-20, y=-20)
 
@@ -91,10 +89,6 @@ def save_image():
         img = Image.fromarray(canvas)
         img.save(file_path)
 
-def clear_canvas():
-    global canvas
-    canvas.fill(255)
-
 def toggle_mode():
     mouse_mode_var.set(not mouse_mode_var.get())
     if mouse_mode_var.get():
@@ -102,14 +96,11 @@ def toggle_mode():
     else:
         camera_mode_label.config(text="Mode: CAMERA")
 
-def close_app():
-    root.quit()
-
 menu_frame = tk.Frame(root)
 menu_frame.pack(fill=tk.X)
 tk.Button(menu_frame, text="Save Image", command=save_image, bg="lightgray", fg="black").pack(side=tk.LEFT, padx=5, pady=2)
-tk.Button(menu_frame, text="Detect Character", command=lambda: detect_screen(canvas, root), bg="lightgray", fg="black").pack(side=tk.LEFT, padx=5, pady=2)
-tk.Button(menu_frame, text="Clear Canvas", command=clear_canvas, bg="lightgray", fg="black").pack(side=tk.LEFT, padx=5, pady=2)
+tk.Button(menu_frame, text="Detect Characters", command=lambda: detect_screen(root, canvas, reopen=True) if np.any(canvas != 255) else None, bg="lightgray", fg="black").pack(side=tk.LEFT, padx=5, pady=2)
+tk.Button(menu_frame, text="Clear Canvas", command=lambda: canvas.fill(255), bg="lightgray", fg="black").pack(side=tk.LEFT, padx=5, pady=2)
 if allow_camera:
     tk.Button(menu_frame, text="Toggle Mode", command=toggle_mode, bg="lightgray", fg="black").pack(side=tk.LEFT, padx=5, pady=2)
     camera_mode_label = tk.Label(menu_frame, text="Mode: CAMERA", bg="lightgray", fg="black")
@@ -118,10 +109,10 @@ if allow_camera:
 canvas_label.bind("<ButtonPress>", mouse_press)
 canvas_label.bind("<ButtonRelease>", mouse_release)
 canvas_label.bind("<Motion>", mouse_motion)
-root.protocol("WM_DELETE_WINDOW", close_app)
+root.protocol("WM_DELETE_WINDOW", lambda: root.quit())
 
 if allow_camera:
-    thread = threading.Thread(target=lambda: video_stream(video, canvas, mouse_mode_var, prev_x, prev_y, cursor_label))
+    thread = threading.Thread(target=lambda: video_stream(video, root, canvas, mouse_mode_var, prev_x, prev_y, cursor_label))
     thread.start()
 
 update_canvas()
