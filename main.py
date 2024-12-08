@@ -14,7 +14,7 @@ if not os.path.exists("logs/model.pth"):
     start_training()
 
 root = tk.Tk()
-root.title("Hand Drawing Canvas")
+root.title("HandSketch")
 if os.name == "nt":
     root.iconbitmap("icon.ico")
 root.attributes('-topmost', True)

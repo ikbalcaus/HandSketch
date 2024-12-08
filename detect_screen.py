@@ -111,7 +111,7 @@ def detect_screen(root, canvas, reopen):
 
     detect_window = tk.Toplevel(root)
     detect_window_ref = detect_window
-    detect_window.title("Detected Characters")
+    detect_window.title("HandSketch")
     if os.name == "nt":
         detect_window.iconbitmap("icon.ico")
     detect_window.geometry("880x300")

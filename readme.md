@@ -1,4 +1,4 @@
-# Hand Drawing Canvas
+# HandSketch
 
 This project implements a character detection system using Python. It utilizes OpenCV, Mediapipe, PyTorch and Tkinter for image processing and model inference.
 
@@ -33,7 +33,7 @@ To start program run a following command inside a project directory:
 
 ## Gestures
 
-Hand Drawing Canvas recognizes the following hand gestures:
+This project recognizes following hand gestures:
 
 - **Writing Gesture**:  
   Extend the point finger and the close thumb
