@@ -11,7 +11,7 @@ from detect_screen import detect_screen
 from train import start_training
 
 if not os.path.exists("logs/model.pth"):
-    start_training()
+    threading.Thread(target=start_training).start()
 
 root = tk.Tk()
 root.title("HandSketch")
@@ -96,11 +96,16 @@ def toggle_mode():
     else:
         camera_mode_label.config(text="Mode: CAMERA")
 
+def train_again():
+    if messagebox.askyesno("Train Again", "Are you sure you want to train again? You won't be able to close the application until the training is complete..."):
+        threading.Thread(target=start_training).start()
+
 menu_frame = tk.Frame(root)
 menu_frame.pack(fill=tk.X)
 tk.Button(menu_frame, text="Save Image", command=save_image, bg="lightgray", fg="black").pack(side=tk.LEFT, padx=5, pady=2)
 tk.Button(menu_frame, text="Detect Characters", command=lambda: detect_screen(root, canvas, reopen=True) if np.any(canvas != 255) else None, bg="lightgray", fg="black").pack(side=tk.LEFT, padx=5, pady=2)
 tk.Button(menu_frame, text="Clear Canvas", command=lambda: canvas.fill(255), bg="lightgray", fg="black").pack(side=tk.LEFT, padx=5, pady=2)
+tk.Button(menu_frame, text="Train Again", command=train_again, bg="lightgray", fg="black").pack(side=tk.LEFT, padx=5, pady=2)
 if allow_camera:
     tk.Button(menu_frame, text="Toggle Mode", command=toggle_mode, bg="lightgray", fg="black").pack(side=tk.LEFT, padx=5, pady=2)
     camera_mode_label = tk.Label(menu_frame, text="Mode: CAMERA", bg="lightgray", fg="black")
@@ -112,8 +117,7 @@ canvas_label.bind("<Motion>", mouse_motion)
 root.protocol("WM_DELETE_WINDOW", lambda: root.quit())
 
 if allow_camera:
-    thread = threading.Thread(target=lambda: video_stream(video, root, canvas, mouse_mode_var, prev_x, prev_y, cursor_label))
-    thread.start()
+    threading.Thread(target=lambda: video_stream(video, root, canvas, mouse_mode_var, prev_x, prev_y, cursor_label)).start()
 
 update_canvas()
 
