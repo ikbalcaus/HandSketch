@@ -73,7 +73,7 @@ def save_results(detect_window, canvas, characters, bounds, entries):
             borderType=cv2.BORDER_CONSTANT, 
             value=[255, 255, 255]
         )
-        char_name = entry.get() or f"{character}_{i}"
+        char_name = entry.get()
         os.makedirs(f"dataset/{char_name}", exist_ok=True)
         char_image_path = f"dataset/{char_name}/{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}_{i}.jpg"
         Image.fromarray(char_img_with_border).save(char_image_path)
