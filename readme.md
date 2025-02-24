@@ -36,7 +36,7 @@ To start program run a following command inside a project directory:
 This project recognizes following hand gestures:
 
 - **Writing Gesture**:  
-  Extend the point finger and the close thumb
+  Extend the point finger and close the thumb
 
 - **Erasing Gesture**:  
   Extend all fingers
