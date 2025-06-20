@@ -66,19 +66,6 @@ def video_stream(video, root=None, canvas=None, mouse_mode_var=None, prev_x=None
                     and not erasing_gesture
                 )
 
-                approve_gesture = (
-                    (
-                        landmark_4_vertical < landmark_3_vertical
-                        and landmark_3_vertical < landmark_2_vertical
-                        and landmark_2_vertical < landmark_5_vertical
-                        and landmark_5_vertical < landmark_9_vertical
-                        and landmark_9_vertical < landmark_13_vertical
-                        and landmark_13_vertical < landmark_17_vertical
-                    )
-                    and not erasing_gesture
-                    and not writing_gesture
-                )
-
                 if writing_gesture and detect_window_ref is None:
                     if prev_x is not None and prev_y is not None:
                         cv2.line(canvas, (prev_x, prev_y), (landmark_8_horizontal, landmark_8_vertical), (0, 0, 0), 5)
@@ -89,9 +76,6 @@ def video_stream(video, root=None, canvas=None, mouse_mode_var=None, prev_x=None
                 if erasing_gesture and detect_window_ref is None:
                     cv2.circle(canvas, (landmark_8_horizontal, landmark_8_vertical), 15, (255, 255, 255), -1)
                     prev_x, prev_y = None, None
-
-                if approve_gesture and root:
-                    detect_screen(root, canvas, reopen=False) if np.any(canvas != 255) else None
 
             else:
                 prev_x, prev_y = None, None
