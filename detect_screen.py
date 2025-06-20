@@ -188,5 +188,5 @@ def detect_screen(root, canvas, reopen):
     detect_window.protocol("WM_DELETE_WINDOW", on_close)
 
 if __name__ == "__main__":
-    print("This file is not intended for direct use. Please run the 'main.py' file instead")
+    print("This file is not intended for direct use. Please run the \"main.py\" file instead")
     input("Press Enter to exit...")
