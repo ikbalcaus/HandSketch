@@ -17,9 +17,9 @@ root = tk.Tk()
 root.title("HandSketch")
 if os.name == "nt":
     root.iconbitmap("icon.ico")
-root.attributes('-topmost', True)
+root.attributes("-topmost", True)
 root.update()
-root.attributes('-topmost', False)
+root.attributes("-topmost", False)
 root.resizable(False, False)
 
 video = cv2.VideoCapture(0)

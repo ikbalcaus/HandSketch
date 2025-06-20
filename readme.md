@@ -41,9 +41,6 @@ This project recognizes following hand gestures:
 - **Erasing Gesture**:  
   Extend all fingers
 
-- **Approve Gesture**:  
-  Perform a like gesture
-
 The gestures are detected in real-time, with visual feedback provided on the screen via circles drawn at the key landmarks, along with labels indicating the detected gesture.  
 
 ![](landmarks.png)  

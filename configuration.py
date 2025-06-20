@@ -28,10 +28,12 @@ class CNNModel(nn.Module):
 transform = transforms.Compose([
     transforms.Grayscale(num_output_channels=1),
     transforms.Resize((28, 28)), 
+    transforms.RandomRotation(10),
+    transforms.RandomAffine(0, shear=10, scale=(0.8, 1.2)),
     transforms.ToTensor(),
     transforms.Normalize((0.5,), (0.5,))
 ])
 
 if __name__ == "__main__":
-    print("This file is not intended for direct use. Please run the 'main.py' file instead")
+    print("This file is not intended for direct use. Please run the \"main.py\" file instead")
     input("Press Enter to exit...")

@@ -46,19 +46,21 @@ def get_characters_contours(canvas):
 
 def detect_characters(model, canvas):
     model.eval()
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    model.to(device)
     results = []
     contours, thresh, end_rows = get_characters_contours(canvas)
     for contour in contours:
         x, y, w, h = cv2.boundingRect(contour)
-        if w > 5 and h > 5:
-            roi = thresh[y:y+h, x:x+w]
-            roi_pil = Image.fromarray(roi)
-            roi_pil = transform(roi_pil).unsqueeze(0)
-            with torch.no_grad():
-                output = model(roi_pil)
-                _, detected = torch.max(output, 1)
-                char = map_class_to_char(detected.item())
-                results.append(char)
+        roi = thresh[y:y+h, x:x+w]
+        roi_pil = Image.fromarray(roi)
+        roi_pil = transform(roi_pil).unsqueeze(0)
+        roi_pil = roi_pil.to(device)
+        with torch.no_grad():
+            output = model(roi_pil)
+            _, detected = torch.max(output, 1)
+            char = map_class_to_char(detected.item())
+            results.append(char)
     for i in range(len(results) - 1, -1, -1):
         if i in end_rows:
             results.insert(i + 1, " ")
@@ -69,13 +71,17 @@ if __name__ == "__main__":
     if os.path.exists("images"):
         model = CNNModel()
         if os.path.exists("logs/model.pth"):
-            model.load_state_dict(torch.load("logs/model.pth", weights_only=True))
+            model.load_state_dict(torch.load("logs/model.pth"))
         for filename in os.listdir("images"):
             if filename.endswith((".jpg", ".png")):
-                characters = detect_characters(model, cv2.imread(os.path.join("images", filename)))
-                results[filename] = characters
+                try:
+                    image = cv2.imread(os.path.join("images", filename))
+                    characters = detect_characters(model, image)
+                    results[filename] = characters
+                except Exception as e:
+                    print(f"Error processing {filename}: {e}")
     for filename, characters in results.items():
         print(f"{filename}: {characters}")
     if len(results) == 0:
-        print("No images found inside 'images' folder with extension '.jpg' or '.png'")
+        print("No images found inside \"images\" folder with extension \".jpg\" or \".png\"")
     input("Press Enter to exit...")
